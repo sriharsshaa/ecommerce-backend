@@ -1,0 +1,77 @@
+package com.example.ecommerce.controller;
+
+import com.example.ecommerce.entity.Order;
+import com.example.ecommerce.entity.OrderItem;
+import com.example.ecommerce.entity.User;
+import com.example.ecommerce.repository.UserRepository;
+import com.example.ecommerce.service.OrderService;
+
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@CrossOrigin(origins = "http://localhost:5173")
+@RestController
+@RequestMapping("/api/orders")
+public class OrderController {
+
+    private final OrderService orderService;
+    private final UserRepository userRepository;
+
+    public OrderController(
+            OrderService orderService,
+            UserRepository userRepository) {
+
+        this.orderService = orderService;
+        this.userRepository = userRepository;
+    }
+
+    // Checkout / Create order
+    @PostMapping
+    public Order createOrder(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User user =
+                userRepository.findByEmail(email)
+                        .orElseThrow();
+
+        return orderService.createOrder(
+                user.getId()
+        );
+    }
+
+    // Get all orders of logged-in user
+    @GetMapping
+    public List<Order> getOrders(
+            Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User user =
+                userRepository.findByEmail(email)
+                        .orElseThrow();
+
+        return orderService.getOrders(
+                user.getId()
+        );
+    }
+
+    // Get items of a particular order
+    @GetMapping("/{orderId}/items")
+    public List<OrderItem> getOrderItems(
+            @PathVariable Long orderId,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                        .orElseThrow();
+        return orderService.getOrderItems(
+                orderId,
+                user.getId()
+        );
+    }
+
+}
