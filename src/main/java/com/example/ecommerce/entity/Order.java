@@ -20,23 +20,34 @@ public class Order {
 
     private double totalAmount;
 
+    private String paymentMethod;
+
     private String status;
 
     private LocalDateTime createdAt;
 
+
+    // Default constructor
     public Order() {
     }
 
+
+    // Parameterized constructor
     public Order(
             Long userId,
             double totalAmount,
+            String paymentMethod,
             String status) {
 
         this.userId = userId;
         this.totalAmount = totalAmount;
+        this.paymentMethod = paymentMethod;
         this.status = status;
         this.createdAt = LocalDateTime.now();
     }
+
+
+    // Getters
 
     public Long getId() {
         return id;
@@ -50,6 +61,10 @@ public class Order {
         return totalAmount;
     }
 
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -57,6 +72,9 @@ public class Order {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
+
+
+    // Setters
 
     public void setId(Long id) {
         this.id = id;
@@ -68,6 +86,10 @@ public class Order {
 
     public void setTotalAmount(double totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
     }
 
     public void setStatus(String status) {

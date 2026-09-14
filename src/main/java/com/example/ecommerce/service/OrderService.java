@@ -35,7 +35,9 @@ public class OrderService {
     }
 
     @Transactional
-    public Order createOrder(Long userId) {
+    public Order createOrder(
+            Long userId,
+            String paymentMethod) {
 
         // 1. Get user's cart
         List<CartItem> cartItems =
@@ -66,6 +68,7 @@ public class OrderService {
                 new Order(
                         userId,
                         totalAmount,
+                        paymentMethod,
                         "PLACED"
                 );
 
@@ -103,21 +106,20 @@ public class OrderService {
         return orderRepository.findByUserId(userId);
     }
 
-public List<OrderItem> getOrderItems(
-        Long orderId,
-        Long userId) {
+    public List<OrderItem> getOrderItems(
+            Long orderId,
+            Long userId) {
 
-    // Check whether the order belongs to this user
-    orderRepository
-            .findByIdAndUserId(orderId, userId)
-            .orElseThrow(() ->
-                    new RuntimeException(
-                            "Order does not belong to this user"
-                    )
-            );
+        // Check whether the order belongs to this user
+        orderRepository
+                .findByIdAndUserId(orderId, userId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Order does not belong to this user"
+                        )
+                );
 
-    // Only return items after ownership is verified
-    return orderItemRepository.findByOrderId(orderId);
-}
-
+        // Only return items after ownership is verified
+        return orderItemRepository.findByOrderId(orderId);
+    }
 }

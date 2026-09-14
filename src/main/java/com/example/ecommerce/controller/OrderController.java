@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/orders")
@@ -18,6 +19,7 @@ public class OrderController {
 
     private final OrderService orderService;
     private final UserRepository userRepository;
+
 
     public OrderController(
             OrderService orderService,
@@ -27,9 +29,14 @@ public class OrderController {
         this.userRepository = userRepository;
     }
 
-    // Checkout / Create order
+
+    // =========================================================
+    // Checkout / Create Order
+    // =========================================================
+
     @PostMapping
     public Order createOrder(
+            @RequestParam String paymentMethod,
             Authentication authentication) {
 
         String email = authentication.getName();
@@ -39,11 +46,16 @@ public class OrderController {
                         .orElseThrow();
 
         return orderService.createOrder(
-                user.getId()
+                user.getId(),
+                paymentMethod
         );
     }
 
-    // Get all orders of logged-in user
+
+    // =========================================================
+    // Get All Orders of Logged-in User
+    // =========================================================
+
     @GetMapping
     public List<Order> getOrders(
             Authentication authentication) {
@@ -59,15 +71,22 @@ public class OrderController {
         );
     }
 
-    // Get items of a particular order
+
+    // =========================================================
+    // Get Items of a Particular Order
+    // =========================================================
+
     @GetMapping("/{orderId}/items")
     public List<OrderItem> getOrderItems(
             @PathVariable Long orderId,
             Authentication authentication) {
 
         String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
+
+        User user =
+                userRepository.findByEmail(email)
                         .orElseThrow();
+
         return orderService.getOrderItems(
                 orderId,
                 user.getId()
