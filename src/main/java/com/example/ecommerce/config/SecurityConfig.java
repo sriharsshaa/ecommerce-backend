@@ -20,7 +20,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter) {
+
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
@@ -34,22 +36,31 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
+            // Disable CSRF because we are using JWT
             .csrf(csrf -> csrf.disable())
 
+            // Enable CORS
             .cors(cors ->
-                cors.configurationSource(corsConfigurationSource())
+                cors.configurationSource(
+                    corsConfigurationSource()
+                )
             )
 
+            // JWT-based authentication is stateless
             .sessionManagement(session ->
                 session.sessionCreationPolicy(
                     SessionCreationPolicy.STATELESS
                 )
             )
 
+            // Authorization rules
             .authorizeHttpRequests(auth -> auth
 
                 // Allow browser CORS preflight requests
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(
+                    HttpMethod.OPTIONS,
+                    "/**"
+                ).permitAll()
 
                 // Public APIs
                 .requestMatchers(
@@ -60,10 +71,17 @@ public class SecurityConfig {
                     "/api/products/**"
                 ).permitAll()
 
-                // Everything else needs JWT
+                // Anyone can view product reviews
+                .requestMatchers(
+                    HttpMethod.GET,
+                    "/api/reviews/**"
+                ).permitAll()
+
+                // Everything else requires JWT
                 .anyRequest().authenticated()
             )
 
+            // Run JWT filter before Spring's username/password filter
             .addFilterBefore(
                 jwtAuthenticationFilter,
                 UsernamePasswordAuthenticationFilter.class
@@ -79,21 +97,21 @@ public class SecurityConfig {
                 new CorsConfiguration();
 
         configuration.setAllowedOrigins(
-                List.of("http://localhost:5173")
+            List.of("http://localhost:5173")
         );
 
         configuration.setAllowedMethods(
-                List.of(
-                    "GET",
-                    "POST",
-                    "PUT",
-                    "DELETE",
-                    "OPTIONS"
-                )
+            List.of(
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE",
+                "OPTIONS"
+            )
         );
 
         configuration.setAllowedHeaders(
-                List.of("*")
+            List.of("*")
         );
 
         configuration.setAllowCredentials(true);
@@ -102,8 +120,8 @@ public class SecurityConfig {
                 new UrlBasedCorsConfigurationSource();
 
         source.registerCorsConfiguration(
-                "/**",
-                configuration
+            "/**",
+            configuration
         );
 
         return source;
