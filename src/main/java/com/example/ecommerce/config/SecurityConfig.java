@@ -36,6 +36,7 @@ public class SecurityConfig {
             HttpSecurity http) throws Exception {
 
         http
+
             // Disable CSRF because we are using JWT
             .csrf(csrf -> csrf.disable())
 
@@ -71,11 +72,21 @@ public class SecurityConfig {
                     "/api/products/**"
                 ).permitAll()
 
+                // Uploaded product images are public
+                .requestMatchers(
+                    "/images/products/**"
+                ).permitAll()
+
                 // Anyone can view product reviews
                 .requestMatchers(
                     HttpMethod.GET,
                     "/api/reviews/**"
                 ).permitAll()
+
+                // ADMIN-only APIs
+                .requestMatchers(
+                    "/api/admin/**"
+                ).hasRole("ADMIN")
 
                 // Everything else requires JWT
                 .anyRequest().authenticated()

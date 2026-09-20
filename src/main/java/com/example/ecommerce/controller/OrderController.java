@@ -93,4 +93,43 @@ public class OrderController {
         );
     }
 
+    // =========================================================
+    // Update Order Status
+    // =========================================================
+
+    @PutMapping("/{orderId}/status")
+    public Order updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestParam String status,
+            Authentication authentication) {
+
+        String email = authentication.getName();
+        User user =
+                userRepository.findByEmail(email)
+                        .orElseThrow();
+
+        return orderService.updateOrderStatus(
+                orderId,
+                user.getId(),
+                status
+        );
+    }
+
+    @PutMapping("/{orderId}/cancel")
+    public Order cancelOrder(
+        @PathVariable Long orderId,
+        Authentication authentication) {
+
+        String email = authentication.getName();
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow();
+
+        return orderService.cancelOrder(
+                orderId,
+                user.getId()
+        );
+    }
 }

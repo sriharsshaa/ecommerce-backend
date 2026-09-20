@@ -30,6 +30,7 @@ public class CartController {
     @PostMapping("/add")
     public CartItem addToCart(
             @RequestParam Long productId,
+            @RequestParam(defaultValue = "1") int quantity,
             Authentication authentication) {
 
         String email = authentication.getName();
@@ -39,7 +40,8 @@ public class CartController {
 
         return cartService.addToCart(
                 user.getId(),
-                productId
+                productId,
+                quantity
         );
     }
 

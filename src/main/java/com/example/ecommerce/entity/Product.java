@@ -16,6 +16,9 @@ public class Product {
     private double price;
     private String category;
 
+    // Stock quantity
+    private int stock;
+
     // Common product fields
     private String brand;
     private String storage;
@@ -45,15 +48,27 @@ public class Product {
     private String refreshRate;
     private String panelType;
 
-    // Default constructor
+    private String description;
+    private String imageUrl;
+
+
+    // =========================================================
+    // DEFAULT CONSTRUCTOR
+    // =========================================================
+
     public Product() {
     }
 
-    // Parameterized constructor
+
+    // =========================================================
+    // PARAMETERIZED CONSTRUCTOR
+    // =========================================================
+
     public Product(
             String name,
             double price,
             String category,
+            int stock,
             String brand,
             String storage,
             String ram,
@@ -72,11 +87,15 @@ public class Product {
             String compatibility,
             String resolution,
             String refreshRate,
-            String panelType
+            String panelType,
+            String description,
+            String imageUrl
     ) {
+
         this.name = name;
         this.price = price;
         this.category = category;
+        this.stock = stock;
 
         this.brand = brand;
         this.storage = storage;
@@ -101,9 +120,15 @@ public class Product {
         this.resolution = resolution;
         this.refreshRate = refreshRate;
         this.panelType = panelType;
+
+        this.description = description;
+        this.imageUrl = imageUrl;
     }
 
-    // Getters
+
+    // =========================================================
+    // GETTERS
+    // =========================================================
 
     public Long getId() {
         return id;
@@ -119,6 +144,10 @@ public class Product {
 
     public String getCategory() {
         return category;
+    }
+
+    public int getStock() {
+        return stock;
     }
 
     public String getBrand() {
@@ -197,7 +226,18 @@ public class Product {
         return panelType;
     }
 
-    // Setters
+    public String getDescription() {
+        return description;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+
+    // =========================================================
+    // SETTERS
+    // =========================================================
 
     public void setId(Long id) {
         this.id = id;
@@ -213,6 +253,10 @@ public class Product {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public void setStock(int stock) {
+        this.stock = stock;
     }
 
     public void setBrand(String brand) {
@@ -289,5 +333,13 @@ public class Product {
 
     public void setPanelType(String panelType) {
         this.panelType = panelType;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }
