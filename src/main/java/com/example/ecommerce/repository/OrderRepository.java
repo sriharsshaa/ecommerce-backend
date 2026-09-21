@@ -12,12 +12,34 @@ import java.util.Optional;
 public interface OrderRepository
         extends JpaRepository<Order, Long> {
 
-    List<Order> findByUserId(Long userId);
+    // =========================================================
+    // GET ORDERS OF A USER
+    // =========================================================
+
+    @Query("""
+        SELECT o
+        FROM Order o
+        WHERE o.userId = :userId
+        ORDER BY o.createdAt DESC
+    """)
+    List<Order> findOrdersByUserId(
+            @Param("userId") Long userId
+    );
+
+
+    // =========================================================
+    // FIND ONE ORDER BELONGING TO A USER
+    // =========================================================
 
     Optional<Order> findByIdAndUserId(
             Long id,
             Long userId
     );
+
+
+    // =========================================================
+    // REVENUE BY DATE
+    // =========================================================
 
     @Query("""
         SELECT FUNCTION('DATE', o.createdAt),
@@ -27,19 +49,23 @@ public interface OrderRepository
         GROUP BY FUNCTION('DATE', o.createdAt)
         ORDER BY FUNCTION('DATE', o.createdAt)
     """)
-
     List<Object[]> getRevenueByDate();
 
-        @Query("""
+
+    // =========================================================
+    // CHECK WHETHER USER PURCHASED PRODUCT
+    // =========================================================
+
+    @Query("""
         SELECT COUNT(oi)
         FROM OrderItem oi
         JOIN Order o ON oi.orderId = o.id
         WHERE o.userId = :userId
         AND oi.productId = :productId
         AND o.status <> 'CANCELLED'
-        """)
-        long countPurchasedProduct(
-                @Param("userId") Long userId,
-                @Param("productId") Long productId
-        );
+    """)
+    long countPurchasedProduct(
+            @Param("userId") Long userId,
+            @Param("productId") Long productId
+    );
 }

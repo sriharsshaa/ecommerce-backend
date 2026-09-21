@@ -1,9 +1,12 @@
 package com.example.ecommerce.service;
 
+import com.example.ecommerce.entity.Address;
 import com.example.ecommerce.entity.CartItem;
 import com.example.ecommerce.entity.Order;
 import com.example.ecommerce.entity.OrderItem;
 import com.example.ecommerce.entity.Product;
+
+import com.example.ecommerce.repository.AddressRepository;
 import com.example.ecommerce.repository.CartRepository;
 import com.example.ecommerce.repository.OrderItemRepository;
 import com.example.ecommerce.repository.OrderRepository;
@@ -23,44 +26,97 @@ public class OrderService {
     private final OrderItemRepository orderItemRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final AddressRepository addressRepository;
+
 
     public OrderService(
             OrderRepository orderRepository,
             OrderItemRepository orderItemRepository,
             CartRepository cartRepository,
-            ProductRepository productRepository) {
+            ProductRepository productRepository,
+            AddressRepository addressRepository) {
 
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
+        this.addressRepository = addressRepository;
     }
+
+
+    // =========================================================
+    // CREATE ORDER
+    // =========================================================
 
     @Transactional
     public Order createOrder(
             Long userId,
+            Long addressId,
             String paymentMethod) {
 
-        // 1. Get user's cart
+        // -----------------------------------------------------
+        // 1. Check address
+        // -----------------------------------------------------
+
+        Address address =
+                addressRepository
+                        .findById(addressId)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Address not found"
+                                )
+                        );
+
+
+        // -----------------------------------------------------
+        // 2. Check address belongs to user
+        // -----------------------------------------------------
+
+        if (!address.getUserId().equals(userId)) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "You cannot use this address"
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // 3. Get user's cart
+        // -----------------------------------------------------
+
         List<CartItem> cartItems =
                 cartRepository.findByUserId(userId);
 
-        // 2. Check whether cart is empty
+
+        // -----------------------------------------------------
+        // 4. Check cart
+        // -----------------------------------------------------
+
         if (cartItems.isEmpty()) {
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Cart is empty"
             );
         }
 
-        // 3. Check stock and calculate total
+
+        // -----------------------------------------------------
+        // 5. Calculate total and check stock
+        // -----------------------------------------------------
+
         double totalAmount = 0;
+
 
         for (CartItem cartItem : cartItems) {
 
             Product product =
                     productRepository
-                            .findById(cartItem.getProductId())
+                            .findById(
+                                    cartItem.getProductId()
+                            )
                             .orElseThrow(() ->
                                     new ResponseStatusException(
                                             HttpStatus.NOT_FOUND,
@@ -68,8 +124,9 @@ public class OrderService {
                                     )
                             );
 
-            // Check stock before placing order
-            if (product.getStock() < cartItem.getQuantity()) {
+
+            if (product.getStock()
+                    < cartItem.getQuantity()) {
 
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
@@ -78,30 +135,49 @@ public class OrderService {
                 );
             }
 
+
             totalAmount +=
                     product.getPrice()
                     * cartItem.getQuantity();
         }
 
-        // 4. Create Order
+
+        // -----------------------------------------------------
+        // 6. Create order
+        // -----------------------------------------------------
+
         Order order =
                 new Order(
                         userId,
+                        addressId,
                         totalAmount,
                         paymentMethod,
                         "PLACED"
                 );
 
+
         Order savedOrder =
                 orderRepository.save(order);
 
-        // 5. Create OrderItems and reduce stock
+
+        // -----------------------------------------------------
+        // 7. Create order items + reduce stock
+        // -----------------------------------------------------
+
         for (CartItem cartItem : cartItems) {
 
             Product product =
                     productRepository
-                            .findById(cartItem.getProductId())
-                            .orElseThrow();
+                            .findById(
+                                    cartItem.getProductId()
+                            )
+                            .orElseThrow(() ->
+                                    new ResponseStatusException(
+                                            HttpStatus.NOT_FOUND,
+                                            "Product not found"
+                                    )
+                            );
+
 
             OrderItem orderItem =
                     new OrderItem(
@@ -111,7 +187,9 @@ public class OrderService {
                             product.getPrice()
                     );
 
+
             orderItemRepository.save(orderItem);
+
 
             // Reduce stock
             product.setStock(
@@ -119,39 +197,68 @@ public class OrderService {
                     - cartItem.getQuantity()
             );
 
+
             productRepository.save(product);
         }
 
-        // 6. Clear cart
+
+        // -----------------------------------------------------
+        // 8. Clear cart
+        // -----------------------------------------------------
+
         cartRepository.deleteAll(cartItems);
 
-        // 7. Return order
+
+        // -----------------------------------------------------
+        // 9. Return saved order
+        // -----------------------------------------------------
+
         return savedOrder;
     }
 
+
+    // =========================================================
+    // GET ORDERS OF LOGGED-IN USER
+    // =========================================================
+
     public List<Order> getOrders(Long userId) {
 
-        return orderRepository.findByUserId(userId);
+        return orderRepository.findOrdersByUserId(userId);
     }
+
+
+    // =========================================================
+    // GET ORDER ITEMS
+    // =========================================================
 
     public List<OrderItem> getOrderItems(
             Long orderId,
             Long userId) {
 
-        // Check whether the order belongs to this user
+        // Check ownership
+
         orderRepository
-                .findByIdAndUserId(orderId, userId)
+                .findByIdAndUserId(
+                        orderId,
+                        userId
+                )
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Order does not belong to this user"
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Order not found"
                         )
                 );
 
-        // Only return items after ownership is verified
-        return orderItemRepository.findByOrderId(orderId);
+
+        return orderItemRepository
+                .findByOrderId(orderId);
     }
 
-    // Update order status
+
+    // =========================================================
+    // UPDATE ORDER STATUS
+    // =========================================================
+
     public Order updateOrderStatus(
             Long orderId,
             Long userId,
@@ -159,26 +266,39 @@ public class OrderService {
 
         Order order =
                 orderRepository
-                        .findByIdAndUserId(orderId, userId)
+                        .findByIdAndUserId(
+                                orderId,
+                                userId
+                        )
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Order does not belong to this user"
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Order not found"
                                 )
                         );
 
-        String currentStatus = order.getStatus();
+
+        String currentStatus =
+                order.getStatus();
+
 
         boolean validTransition =
                 (currentStatus.equals("PLACED")
                         && newStatus.equals("CONFIRMED"))
+
                 ||
+
                 (currentStatus.equals("CONFIRMED")
                         && newStatus.equals("SHIPPED"))
+
                 ||
+
                 (currentStatus.equals("SHIPPED")
                         && newStatus.equals("DELIVERED"));
 
+
         if (!validTransition) {
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Invalid order status transition: "
@@ -188,10 +308,17 @@ public class OrderService {
             );
         }
 
+
         order.setStatus(newStatus);
+
 
         return orderRepository.save(order);
     }
+
+
+    // =========================================================
+    // CANCEL ORDER
+    // =========================================================
 
     @Transactional
     public Order cancelOrder(
@@ -200,7 +327,10 @@ public class OrderService {
 
         Order order =
                 orderRepository
-                        .findByIdAndUserId(orderId, userId)
+                        .findByIdAndUserId(
+                                orderId,
+                                userId
+                        )
                         .orElseThrow(() ->
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
@@ -208,7 +338,11 @@ public class OrderService {
                                 )
                         );
 
-        if (!order.getStatus().equals("PLACED")) {
+
+        // Only PLACED orders can be cancelled
+
+        if (!"PLACED".equals(
+                order.getStatus())) {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
@@ -216,16 +350,24 @@ public class OrderService {
             );
         }
 
-        // Get ordered items
-        List<OrderItem> orderItems =
-                orderItemRepository.findByOrderId(orderId);
 
-        // Restore product stock
-        for (OrderItem orderItem : orderItems) {
+        // Get order items
+
+        List<OrderItem> orderItems =
+                orderItemRepository
+                        .findByOrderId(orderId);
+
+
+        // Restore stock
+
+        for (OrderItem orderItem :
+                orderItems) {
 
             Product product =
                     productRepository
-                            .findById(orderItem.getProductId())
+                            .findById(
+                                    orderItem.getProductId()
+                            )
                             .orElseThrow(() ->
                                     new ResponseStatusException(
                                             HttpStatus.NOT_FOUND,
@@ -233,15 +375,19 @@ public class OrderService {
                                     )
                             );
 
+
             product.setStock(
                     product.getStock()
                     + orderItem.getQuantity()
             );
 
+
             productRepository.save(product);
         }
 
-        // Change order status
+
+        // Change status
+
         order.setStatus("CANCELLED");
 
         return orderRepository.save(order);

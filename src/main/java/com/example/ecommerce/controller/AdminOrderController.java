@@ -3,6 +3,7 @@ package com.example.ecommerce.controller;
 import com.example.ecommerce.dto.AdminOrderDTO;
 import com.example.ecommerce.service.AdminOrderService;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +15,7 @@ public class AdminOrderController {
 
     private final AdminOrderService adminOrderService;
 
+
     public AdminOrderController(
             AdminOrderService adminOrderService) {
 
@@ -21,20 +23,36 @@ public class AdminOrderController {
                 adminOrderService;
     }
 
-    @GetMapping
-    public List<AdminOrderDTO> getAllOrders() {
 
-        return adminOrderService.getAllOrders();
+    // =========================================================
+    // GET ALL ORDERS
+    // =========================================================
+
+    @GetMapping
+    public ResponseEntity<List<AdminOrderDTO>> getAllOrders() {
+
+        List<AdminOrderDTO> orders =
+                adminOrderService.getAllOrders();
+
+        return ResponseEntity.ok(orders);
     }
 
+
+    // =========================================================
+    // UPDATE ORDER STATUS
+    // =========================================================
+
     @PutMapping("/{orderId}/status")
-    public AdminOrderDTO updateOrderStatus(
+    public ResponseEntity<AdminOrderDTO> updateOrderStatus(
             @PathVariable Long orderId,
             @RequestParam String status) {
 
-        return adminOrderService.updateOrderStatus(
-                orderId,
-                status
-        );
+        AdminOrderDTO updatedOrder =
+                adminOrderService.updateOrderStatus(
+                        orderId,
+                        status
+                );
+
+        return ResponseEntity.ok(updatedOrder);
     }
 }

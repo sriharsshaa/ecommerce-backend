@@ -6,11 +6,11 @@ import com.example.ecommerce.entity.User;
 import com.example.ecommerce.repository.UserRepository;
 import com.example.ecommerce.service.OrderService;
 
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -31,105 +31,177 @@ public class OrderController {
 
 
     // =========================================================
-    // Checkout / Create Order
+    // CREATE ORDER
     // =========================================================
 
     @PostMapping
-    public Order createOrder(
+    public ResponseEntity<Order> createOrder(
             @RequestParam String paymentMethod,
+            @RequestParam Long addressId,
             Authentication authentication) {
 
-        String email = authentication.getName();
+        String email =
+                authentication.getName();
 
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow();
-
-        return orderService.createOrder(
-                user.getId(),
-                paymentMethod
-        );
-    }
-
-
-    // =========================================================
-    // Get All Orders of Logged-in User
-    // =========================================================
-
-    @GetMapping
-    public List<Order> getOrders(
-            Authentication authentication) {
-
-        String email = authentication.getName();
-
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow();
-
-        return orderService.getOrders(
-                user.getId()
-        );
-    }
-
-
-    // =========================================================
-    // Get Items of a Particular Order
-    // =========================================================
-
-    @GetMapping("/{orderId}/items")
-    public List<OrderItem> getOrderItems(
-            @PathVariable Long orderId,
-            Authentication authentication) {
-
-        String email = authentication.getName();
-
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow();
-
-        return orderService.getOrderItems(
-                orderId,
-                user.getId()
-        );
-    }
-
-    // =========================================================
-    // Update Order Status
-    // =========================================================
-
-    @PutMapping("/{orderId}/status")
-    public Order updateOrderStatus(
-            @PathVariable Long orderId,
-            @RequestParam String status,
-            Authentication authentication) {
-
-        String email = authentication.getName();
-        User user =
-                userRepository.findByEmail(email)
-                        .orElseThrow();
-
-        return orderService.updateOrderStatus(
-                orderId,
-                user.getId(),
-                status
-        );
-    }
-
-    @PutMapping("/{orderId}/cancel")
-    public Order cancelOrder(
-        @PathVariable Long orderId,
-        Authentication authentication) {
-
-        String email = authentication.getName();
 
         User user =
                 userRepository
                         .findByEmail(email)
-                        .orElseThrow();
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
 
-        return orderService.cancelOrder(
-                orderId,
-                user.getId()
+
+        Order order =
+                orderService.createOrder(
+                        user.getId(),
+                        addressId,
+                        paymentMethod
+                );
+
+
+        return ResponseEntity.ok(order);
+    }
+
+
+    // =========================================================
+    // GET ALL ORDERS OF LOGGED-IN USER
+    // =========================================================
+
+    @GetMapping
+    public ResponseEntity<List<Order>> getOrders(
+            Authentication authentication) {
+
+        String email =
+                authentication.getName();
+
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
+
+        List<Order> orders =
+                orderService.getOrders(
+                        user.getId()
+                );
+
+
+        return ResponseEntity.ok(orders);
+    }
+
+
+    // =========================================================
+    // GET ORDER ITEMS
+    // =========================================================
+
+    @GetMapping("/{orderId}/items")
+    public ResponseEntity<List<OrderItem>> getOrderItems(
+            @PathVariable Long orderId,
+            Authentication authentication) {
+
+        String email =
+                authentication.getName();
+
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
+
+        List<OrderItem> items =
+                orderService.getOrderItems(
+                        orderId,
+                        user.getId()
+                );
+
+
+        return ResponseEntity.ok(items);
+    }
+
+
+    // =========================================================
+    // UPDATE ORDER STATUS
+    // =========================================================
+
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<Order> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestParam String status,
+            Authentication authentication) {
+
+        String email =
+                authentication.getName();
+
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
+
+        Order updatedOrder =
+                orderService.updateOrderStatus(
+                        orderId,
+                        user.getId(),
+                        status
+                );
+
+
+        return ResponseEntity.ok(
+                updatedOrder
+        );
+    }
+
+
+    // =========================================================
+    // CANCEL ORDER
+    // =========================================================
+
+    @PutMapping("/{orderId}/cancel")
+    public ResponseEntity<Order> cancelOrder(
+            @PathVariable Long orderId,
+            Authentication authentication) {
+
+        String email =
+                authentication.getName();
+
+
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "User not found"
+                                )
+                        );
+
+
+        Order cancelledOrder =
+                orderService.cancelOrder(
+                        orderId,
+                        user.getId()
+                );
+
+
+        return ResponseEntity.ok(
+                cancelledOrder
         );
     }
 }

@@ -15,31 +15,27 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private Long userId;
-
+    private Long addressId;
     private double totalAmount;
-
     private String paymentMethod;
-
     private String status;
-
     private LocalDateTime createdAt;
-
 
     // Default constructor
     public Order() {
     }
 
-
     // Parameterized constructor
     public Order(
             Long userId,
+            Long addressId,
             double totalAmount,
             String paymentMethod,
             String status) {
 
         this.userId = userId;
+        this.addressId = addressId;
         this.totalAmount = totalAmount;
         this.paymentMethod = paymentMethod;
         this.status = status;
@@ -55,6 +51,10 @@ public class Order {
 
     public Long getUserId() {
         return userId;
+    }
+
+    public Long getAddressId() {
+        return addressId;
     }
 
     public double getTotalAmount() {
@@ -82,6 +82,10 @@ public class Order {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public void setAddressId(Long addressId) {
+        this.addressId = addressId;
     }
 
     public void setTotalAmount(double totalAmount) {

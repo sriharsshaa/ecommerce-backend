@@ -6,8 +6,9 @@ import com.example.ecommerce.entity.User;
 import com.example.ecommerce.repository.OrderRepository;
 import com.example.ecommerce.repository.UserRepository;
 
-
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +31,20 @@ public class AdminOrderService {
         this.adminService = adminService;
     }
 
+
+    // =========================================================
+    // GET ALL ORDERS
+    // =========================================================
+
     public List<AdminOrderDTO> getAllOrders() {
 
         List<Order> orders =
                 orderRepository.findAll();
+
+
         List<AdminOrderDTO> result =
                 new ArrayList<>();
+
 
         for (Order order : orders) {
 
@@ -44,13 +53,17 @@ public class AdminOrderService {
                             .findById(order.getUserId())
                             .orElse(null);
 
+
             String userName = null;
             String userEmail = null;
 
+
             if (user != null) {
+
                 userName = user.getName();
                 userEmail = user.getEmail();
             }
+
 
             AdminOrderDTO dto =
                     new AdminOrderDTO(
@@ -64,71 +77,142 @@ public class AdminOrderService {
                             order.getCreatedAt()
                     );
 
+
             result.add(dto);
         }
+
 
         return result;
     }
 
-public AdminOrderDTO updateOrderStatus(
-        Long orderId,
-        String status) {
 
-    Order order =
-            orderRepository.findById(orderId)
-                    .orElseThrow(() ->
-                            new RuntimeException(
-                                    "Order not found"
-                            )
-                    );
-    String currentStatus =
-            order.getStatus();
-    boolean validTransition =
-            (currentStatus.equals("PLACED")
-                    && status.equals("CONFIRMED"))
-            ||
-            (currentStatus.equals("CONFIRMED")
-                    && status.equals("SHIPPED"))
-            ||
-            (currentStatus.equals("SHIPPED")
-                    && status.equals("DELIVERED"));
+    // =========================================================
+    // UPDATE ORDER STATUS
+    // =========================================================
 
-    if (!validTransition) {
-        throw new RuntimeException(
-                "Invalid order status transition: "
-                        + currentStatus
-                        + " -> "
-                        + status
+    public AdminOrderDTO updateOrderStatus(
+            Long orderId,
+            String status) {
+
+
+        // -----------------------------------------------------
+        // 1. Find order
+        // -----------------------------------------------------
+
+        Order order =
+                orderRepository
+                        .findById(orderId)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Order not found"
+                                )
+                        );
+
+
+        // -----------------------------------------------------
+        // 2. Clean status
+        // -----------------------------------------------------
+
+        String newStatus =
+                status.trim().toUpperCase();
+
+
+        String currentStatus =
+                order.getStatus();
+
+
+        // -----------------------------------------------------
+        // 3. Do not allow updating cancelled orders
+        // -----------------------------------------------------
+
+        if ("CANCELLED".equals(currentStatus)) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cancelled orders cannot be updated"
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // 4. Check valid status transition
+        // -----------------------------------------------------
+
+        boolean validTransition =
+                ("PLACED".equals(currentStatus)
+                        && "CONFIRMED".equals(newStatus))
+
+                ||
+
+                ("CONFIRMED".equals(currentStatus)
+                        && "SHIPPED".equals(newStatus))
+
+                ||
+
+                ("SHIPPED".equals(currentStatus)
+                        && "DELIVERED".equals(newStatus));
+
+
+        if (!validTransition) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid order status transition: "
+                            + currentStatus
+                            + " -> "
+                            + newStatus
+            );
+        }
+
+
+        // -----------------------------------------------------
+        // 5. Update status
+        // -----------------------------------------------------
+
+        order.setStatus(newStatus);
+
+
+        Order updatedOrder =
+                orderRepository.save(order);
+
+
+        // -----------------------------------------------------
+        // 6. Get customer details
+        // -----------------------------------------------------
+
+        User user =
+                userRepository
+                        .findById(
+                                updatedOrder.getUserId()
+                        )
+                        .orElse(null);
+
+
+        String userName = null;
+        String userEmail = null;
+
+
+        if (user != null) {
+
+            userName = user.getName();
+            userEmail = user.getEmail();
+        }
+
+
+        // -----------------------------------------------------
+        // 7. Return updated DTO
+        // -----------------------------------------------------
+
+        return new AdminOrderDTO(
+                updatedOrder.getId(),
+                updatedOrder.getUserId(),
+                userName,
+                userEmail,
+                updatedOrder.getTotalAmount(),
+                updatedOrder.getPaymentMethod(),
+                updatedOrder.getStatus(),
+                updatedOrder.getCreatedAt()
         );
     }
-
-    order.setStatus(status);
-
-    Order updatedOrder =
-            orderRepository.save(order);
-    User user =
-            userRepository
-                    .findById(updatedOrder.getUserId())
-                    .orElse(null);
-
-    String userName = null;
-    String userEmail = null;
-
-    if (user != null) {
-        userName = user.getName();
-        userEmail = user.getEmail();
-    }
-
-    return new AdminOrderDTO(
-            updatedOrder.getId(),
-            updatedOrder.getUserId(),
-            userName,
-            userEmail,
-            updatedOrder.getTotalAmount(),
-            updatedOrder.getPaymentMethod(),
-            updatedOrder.getStatus(),
-            updatedOrder.getCreatedAt()
-    );
-}
-
 }
